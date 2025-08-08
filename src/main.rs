@@ -25,17 +25,24 @@ fn main() -> std::io::Result<()> {
 
 fn handle_client(mut stream: TcpStream) {
     let buf_reader = BufReader::new(&stream);
-    let http_request: Vec<_> = buf_reader
+    let http_request = buf_reader
         .lines()
         .map(|result| result.unwrap())
         .take_while(|line| !line.is_empty())
-        .collect();
+        .collect::<Vec<_>>()
+        .join("\r\n");
+    let http_request = format!("{}\r\n\r\n", http_request);
 
-    for item in http_request {
-        println!("{}", item);
-    }
+    println!("{}", http_request);
 
-    let response = "HTTP/1.1 200 OK\r\n\r\n";
+    let mut send_stream = TcpStream::connect("127.0.0.1:7176").unwrap();
+    send_stream.write_all(http_request.as_bytes()).unwrap();
+
+    let mut response = String::new();
+    let mut buf_reader_send = BufReader::new(&send_stream);
+    buf_reader_send.read_to_string(&mut response).unwrap();
+
+    println!("{}", response);
 
     stream.write_all(response.as_bytes()).unwrap();
 }
