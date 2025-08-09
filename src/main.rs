@@ -8,26 +8,33 @@ use std::{
 
 #[derive(Parser)]
 struct Cli {
-    port: i32,
+    listen_on: i32,
+    target: i32,
 }
 
 fn main() -> std::io::Result<()> {
-    let port = Cli::try_parse().map_or(1234, |x| x.port);
-    let address = format!("127.0.0.1:{}", port);
-    println!("port: {}, address: {}", port, address);
+    let params = Cli::parse();
+    assert_ne!(
+        params.listen_on, params.target,
+        "Target port must be different than listening port."
+    );
+
+    let address = format!("127.0.0.1:{}", params.listen_on);
+    println!("listen_on: {}, target: {}", params.listen_on, params.target);
 
     let listener = TcpListener::bind(address)?;
     for stream in listener.incoming() {
-        handle_client(stream?);
+        handle_client(stream?, params.target);
     }
 
     Ok(())
 }
 
-fn handle_client(stream: TcpStream) {
+fn handle_client(stream: TcpStream, target: i32) {
     use std::sync::Mutex;
 
-    let target_stream = Arc::new(Mutex::new(TcpStream::connect("127.0.0.1:7176").unwrap()));
+    let address = format!("127.0.0.1:{}", target);
+    let target_stream = Arc::new(Mutex::new(TcpStream::connect(address).unwrap()));
     let client_stream = Arc::new(Mutex::new(stream));
 
     // Proxy client -> target
