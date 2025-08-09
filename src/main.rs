@@ -13,9 +13,9 @@ struct Cli {
 
 fn main() -> std::io::Result<()> {
     let port = Cli::try_parse().map_or(1234, |x| x.port);
-    println!("port: {}", port);
     let address = format!("127.0.0.1:{}", port);
-    println!("address: {}", address);
+    println!("port: {}, address: {}", port, address);
+
     let listener = TcpListener::bind(address)?;
     for stream in listener.incoming() {
         handle_client(stream?);
