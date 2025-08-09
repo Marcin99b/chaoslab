@@ -2,8 +2,7 @@ use clap::Parser;
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
-    sync::Arc,
-    thread,
+    thread::{self, JoinHandle},
 };
 
 #[derive(Parser)]
@@ -13,80 +12,85 @@ struct Cli {
 }
 
 fn main() -> std::io::Result<()> {
-    let params = Cli::parse();
-    assert_ne!(
-        params.listen_on, params.target,
-        "Target port must be different than listening port."
-    );
+    // let params = Cli::parse();
+    // assert_ne!(
+    //     params.listen_on, params.target,
+    //     "Target port must be different than listening port."
+    // );
 
-    let address = format!("127.0.0.1:{}", params.listen_on);
-    println!("listen_on: {}, target: {}", params.listen_on, params.target);
+    // println!("listen_on: {}, target: {}", params.listen_on, params.target);
+    // let target_address = format!("127.0.0.1:{}", params.target);
 
-    let listener = TcpListener::bind(address)?;
-    for stream in listener.incoming() {
-        handle_client(stream?, params.target);
-    }
+    let t1 = start_redirection(1001, "127.0.0.1:7176".to_string()).unwrap();
+    let t2 = start_redirection(1002, "127.0.0.1:5241".to_string()).unwrap();
+
+    t1.join().unwrap();
+    t2.join().unwrap();
 
     Ok(())
 }
 
-fn handle_client(stream: TcpStream, target: i32) {
-    use std::sync::Mutex;
+fn start_redirection(
+    listening_port: i32,
+    target_address: String,
+) -> std::io::Result<JoinHandle<()>> {
+    let t = thread::spawn(move || {
+        let address = format!("127.0.0.1:{}", listening_port);
+        let listener = TcpListener::bind(address).unwrap();
+        for stream in listener.incoming() {
+            handle_client(stream.unwrap(), target_address.clone());
+        }
+    });
 
-    let address = format!("127.0.0.1:{}", target);
-    let target_stream = Arc::new(Mutex::new(TcpStream::connect(address).unwrap()));
-    let client_stream = Arc::new(Mutex::new(stream));
+    return Ok(t);
+}
 
-    // Proxy client -> target
-    let t1 = {
-        let client = Arc::clone(&client_stream);
-        let target = Arc::clone(&target_stream);
-        thread::spawn(move || {
-            let mut buf = [0u8; 4096];
-            loop {
-                let mut client = client.lock().unwrap();
-                match client.read(&mut buf) {
-                    Ok(0) => {
-                        let target = target.lock().unwrap();
-                        let _ = target.shutdown(std::net::Shutdown::Write);
+fn handle_client(stream: TcpStream, target_address: String) {
+    use std::thread;
+    let target_stream = TcpStream::connect(target_address).unwrap();
+
+    let mut client_read = stream.try_clone().unwrap();
+    let mut client_write = stream;
+    let mut target_read = target_stream.try_clone().unwrap();
+    let mut target_write = target_stream;
+
+    // Thread: client -> target
+    let t1 = thread::spawn(move || {
+        let mut buf = [0u8; 4096];
+        loop {
+            match client_read.read(&mut buf) {
+                Ok(0) => {
+                    let _ = target_write.shutdown(std::net::Shutdown::Write);
+                    break;
+                }
+                Ok(n) => {
+                    if target_write.write_all(&buf[..n]).is_err() {
                         break;
                     }
-                    Ok(n) => {
-                        let mut target = target.lock().unwrap();
-                        if target.write_all(&buf[..n]).is_err() {
-                            break;
-                        }
-                    }
-                    Err(_) => break,
                 }
+                Err(_) => break,
             }
-        })
-    };
+        }
+    });
 
-    let t2 = {
-        let client = Arc::clone(&client_stream);
-        let target = Arc::clone(&target_stream);
-        thread::spawn(move || {
-            let mut buf = [0u8; 4096];
-            loop {
-                let mut target = target.lock().unwrap();
-                match target.read(&mut buf) {
-                    Ok(0) => {
-                        let client = client.lock().unwrap();
-                        let _ = client.shutdown(std::net::Shutdown::Write);
+    // Thread: target -> client
+    let t2 = thread::spawn(move || {
+        let mut buf = [0u8; 4096];
+        loop {
+            match target_read.read(&mut buf) {
+                Ok(0) => {
+                    let _ = client_write.shutdown(std::net::Shutdown::Write);
+                    break;
+                }
+                Ok(n) => {
+                    if client_write.write_all(&buf[..n]).is_err() {
                         break;
                     }
-                    Ok(n) => {
-                        let mut client = client.lock().unwrap();
-                        if client.write_all(&buf[..n]).is_err() {
-                            break;
-                        }
-                    }
-                    Err(_) => break,
                 }
+                Err(_) => break,
             }
-        })
-    };
+        }
+    });
 
     let _ = t1.join();
     let _ = t2.join();
