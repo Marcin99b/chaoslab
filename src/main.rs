@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::{
     collections::HashMap,
-    io::{Read, Write},
+    io::{self, Read, Write},
     net::{TcpListener, TcpStream},
     thread::{self, JoinHandle},
 };
@@ -12,7 +12,7 @@ struct Cli {
     target: i32,
 }
 
-fn main() -> std::io::Result<()> {
+fn main() -> io::Result<()> {
     // let params = Cli::parse();
     // assert_ne!(
     //     params.listen_on, params.target,
@@ -29,7 +29,9 @@ fn main() -> std::io::Result<()> {
     let mut threads = Vec::new();
 
     for config in redirections_configs {
-        let t = start_redirection(config.0, config.1.to_string()).unwrap();
+        let t = Redirection::new(config.0, config.1.to_string())
+            .start()
+            .unwrap();
         threads.push(t);
     }
 
@@ -40,19 +42,32 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn start_redirection(
+struct Redirection {
     listening_port: i32,
     target_address: String,
-) -> std::io::Result<JoinHandle<()>> {
-    let t = thread::spawn(move || {
-        let address = format!("127.0.0.1:{}", listening_port);
-        let listener = TcpListener::bind(address).unwrap();
-        for stream in listener.incoming() {
-            handle_client(stream.unwrap(), target_address.clone());
-        }
-    });
+}
 
-    return Ok(t);
+impl Redirection {
+    fn new(listening_port: i32, target_address: String) -> Redirection {
+        Redirection {
+            listening_port: listening_port,
+            target_address: target_address,
+        }
+    }
+
+    fn start(&self) -> io::Result<JoinHandle<()>> {
+        let listening_port = self.listening_port;
+        let target_address = self.target_address.clone();
+
+        let t = thread::spawn(move || {
+            let address = format!("127.0.0.1:{}", listening_port);
+            let listener = TcpListener::bind(address).unwrap();
+            for stream in listener.incoming() {
+                handle_client(stream.unwrap(), target_address.clone());
+            }
+        });
+        Ok(t)
+    }
 }
 
 fn handle_client(stream: TcpStream, target_address: String) {
