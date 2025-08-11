@@ -13,6 +13,12 @@ struct Cli {
     target: i32,
 }
 
+struct InputParam {
+    name: String,
+    expose: i32,
+    target: String,
+}
+
 fn main() -> io::Result<()> {
     // let params = Cli::parse();
     // assert_ne!(
@@ -23,7 +29,28 @@ fn main() -> io::Result<()> {
     // println!("listen_on: {}, target: {}", params.listen_on, params.target);
     // let target_address = format!("127.0.0.1:{}", params.target);
 
-    let params: Vec<String> = env::args().collect();
+    let params: Vec<InputParam> = env::args()
+        .map(|arg| match arg.find("=") {
+            None => None,
+            Some(0) => None,
+            Some(x) => match (&arg[..x], &arg[x..]) {
+                (name, mapping) => match mapping.find(":") {
+                    None => None,
+                    Some(y) => match (&mapping[..y], &mapping[y..]) {
+                        (expose, target) => Some(InputParam {
+                            name: name.to_string(),
+                            expose: expose.parse().unwrap(),
+                            target: target.to_string(),
+                        }),
+                        _ => None,
+                    },
+                },
+                _ => None,
+            },
+        })
+        .filter(|x| x.is_some())
+        .map(|x| x.unwrap())
+        .collect();
 
     let mut redirections_configs = HashMap::new();
     redirections_configs.insert(1001, "127.0.0.1:7176");
