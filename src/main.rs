@@ -1,6 +1,7 @@
 use clap::Parser;
 use std::{
     collections::HashMap,
+    env,
     io::{self, Read, Write},
     net::{TcpListener, TcpStream},
     thread::{self, JoinHandle},
@@ -21,6 +22,8 @@ fn main() -> io::Result<()> {
 
     // println!("listen_on: {}, target: {}", params.listen_on, params.target);
     // let target_address = format!("127.0.0.1:{}", params.target);
+
+    let params: Vec<String> = env::args().collect();
 
     let mut redirections_configs = HashMap::new();
     redirections_configs.insert(1001, "127.0.0.1:7176");
