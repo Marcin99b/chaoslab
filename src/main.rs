@@ -1,18 +1,11 @@
-use clap::Parser;
 use std::{
-    collections::HashMap,
     env,
     io::{self, Read, Write},
     net::{TcpListener, TcpStream},
     thread::{self, JoinHandle},
 };
 
-#[derive(Parser)]
-struct Cli {
-    listen_on: i32,
-    target: i32,
-}
-
+#[derive(Debug)]
 struct InputParam {
     name: String,
     expose: i32,
@@ -20,46 +13,31 @@ struct InputParam {
 }
 
 fn main() -> io::Result<()> {
-    // let params = Cli::parse();
-    // assert_ne!(
-    //     params.listen_on, params.target,
-    //     "Target port must be different than listening port."
-    // );
-
-    // println!("listen_on: {}, target: {}", params.listen_on, params.target);
-    // let target_address = format!("127.0.0.1:{}", params.target);
-
+    //example
+    // my_app_https=1001:127.0.0.1:7176 my_app_http=1002:127.0.0.1:5241
+    // app_name=expose_port:target_address
     let params: Vec<InputParam> = env::args()
-        .map(|arg| match arg.find("=") {
-            None => None,
-            Some(0) => None,
-            Some(x) => match (&arg[..x], &arg[x..]) {
-                (name, mapping) => match mapping.find(":") {
-                    None => None,
-                    Some(y) => match (&mapping[..y], &mapping[y..]) {
-                        (expose, target) => Some(InputParam {
-                            name: name.to_string(),
-                            expose: expose.parse().unwrap(),
-                            target: target.to_string(),
-                        }),
-                        _ => None,
-                    },
-                },
-                _ => None,
-            },
+        .filter_map(|arg| {
+            let eq = arg.find('=')?;
+            let name = &arg[..eq];
+            let mapping = &arg[eq + 1..];
+            let colon = mapping.find(':')?;
+            let expose = &mapping[..colon];
+            let target = &mapping[colon + 1..];
+            let expose_port = expose.parse().ok()?;
+            Some(InputParam {
+                name: name.to_string(),
+                expose: expose_port,
+                target: target.to_string(),
+            })
         })
-        .filter(|x| x.is_some())
-        .map(|x| x.unwrap())
         .collect();
 
-    let mut redirections_configs = HashMap::new();
-    redirections_configs.insert(1001, "127.0.0.1:7176");
-    redirections_configs.insert(1002, "127.0.0.1:5241");
+    println!("{:?}", params);
 
     let mut threads = Vec::new();
-
-    for config in redirections_configs {
-        let t = Redirection::new(config.0, config.1.to_string())
+    for param in params {
+        let t = Redirection::new(param.expose, param.target.clone())
             .start()
             .unwrap();
         threads.push(t);
