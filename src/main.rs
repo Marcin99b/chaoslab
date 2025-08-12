@@ -22,6 +22,10 @@ fn main() -> io::Result<()> {
 
     let mut threads = Vec::new();
     for param in params {
+        println!(
+            "Start redirection {} | 127.0.0.1:{} -> {}",
+            param.name, param.expose, param.target
+        );
         let t = Redirection::new(param.expose, param.target.clone())
             .start()
             .unwrap();
