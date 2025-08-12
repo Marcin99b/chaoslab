@@ -1,5 +1,5 @@
 use std::{
-    env,
+    env::{self, Args},
     io::{self, Read, Write},
     net::{TcpListener, TcpStream},
     thread::{self, JoinHandle},
@@ -16,22 +16,7 @@ fn main() -> io::Result<()> {
     //example
     // my_app_https=1001:127.0.0.1:7176 my_app_http=1002:127.0.0.1:5241
     // app_name=expose_port:target_address
-    let params: Vec<InputParam> = env::args()
-        .filter_map(|arg| {
-            let eq = arg.find('=')?;
-            let name = &arg[..eq];
-            let mapping = &arg[eq + 1..];
-            let colon = mapping.find(':')?;
-            let expose = &mapping[..colon];
-            let target = &mapping[colon + 1..];
-            let expose_port = expose.parse().ok()?;
-            Some(InputParam {
-                name: name.to_string(),
-                expose: expose_port,
-                target: target.to_string(),
-            })
-        })
-        .collect();
+    let params: Vec<InputParam> = parse_params(env::args());
 
     println!("{:?}", params);
 
@@ -48,6 +33,24 @@ fn main() -> io::Result<()> {
     }
 
     Ok(())
+}
+
+fn parse_params(args: Args) -> Vec<InputParam> {
+    args.filter_map(|arg| {
+        let eq = arg.find('=')?;
+        let name = &arg[..eq];
+        let mapping = &arg[eq + 1..];
+        let colon = mapping.find(':')?;
+        let expose = &mapping[..colon];
+        let target = &mapping[colon + 1..];
+        let expose_port = expose.parse().ok()?;
+        Some(InputParam {
+            name: name.to_string(),
+            expose: expose_port,
+            target: target.to_string(),
+        })
+    })
+    .collect()
 }
 
 struct Redirection {
