@@ -55,6 +55,7 @@ impl Redirection {
         });
         Ok(t)
     }
+
     pub fn start(&self) {
         let mut mode = self.mode.lock().unwrap();
         *mode = RedirectionMode::Started;
