@@ -15,15 +15,16 @@ fn main() -> io::Result<()> {
     println!("{:?}", params);
 
     let mut threads = Vec::new();
+    let mut redirections = Vec::new();
     for param in params {
         println!(
             "Start redirection {} | 127.0.0.1:{} -> {}",
             param.name, param.expose, param.target
         );
-        let t = Redirection::new(param.expose, param.target.clone())
-            .start()
-            .unwrap();
+        let r = Redirection::new(param.expose, param.target.clone());
+        let t = r.start()?;
         threads.push(t);
+        redirections.push(r);
     }
 
     for t in threads {
