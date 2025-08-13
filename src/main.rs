@@ -17,9 +17,11 @@ fn main() -> io::Result<()> {
             "Start redirection {} | 127.0.0.1:{} -> {}",
             param.name, param.expose, param.target
         );
-        let r = Redirection::new(param.expose, param.target.clone());
-        let t = r.start()?;
+        let mut r = Redirection::new(param.expose, param.target.clone());
+        let t = r.init()?;
         threads.push(t);
+
+        r.start();
         redirections.push(r);
     }
 
