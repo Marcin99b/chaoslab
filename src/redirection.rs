@@ -27,16 +27,16 @@ impl Redirection {
     pub fn init(&self) -> io::Result<JoinHandle<()>> {
         let listening_port = self.listening_port;
         let target_address = self.target_address.clone();
+        let mode = self.mode.clone();
         let t = thread::spawn(move || {
             let address = format!("127.0.0.1:{}", listening_port);
             let listener = TcpListener::bind(address).unwrap();
             for stream in listener.incoming() {
-                let mode = self.mode.clone();
                 if let Ok(s) = stream {
-                    match mode {
+                    match mode.clone() {
                         RedirectionMode::Started => {
                             Redirection::handle_client(s, target_address.clone())
-                        },
+                        }
                         RedirectionMode::Slowed(x) => {
                             thread::sleep(time::Duration::from_millis(x));
                             Redirection::handle_client(s, target_address.clone());
@@ -48,8 +48,6 @@ impl Redirection {
         });
         Ok(t)
     }
-    }
-
     pub fn start(&mut self) {
         let _ = std::mem::replace(&mut self.mode, RedirectionMode::Started);
     }
