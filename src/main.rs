@@ -1,4 +1,3 @@
-mod client;
 mod input_param;
 mod redirection;
 
@@ -7,9 +6,6 @@ use redirection::Redirection;
 use std::io;
 
 fn main() -> io::Result<()> {
-    //example
-    // my_app_https=1001:127.0.0.1:7176 my_app_http=1002:127.0.0.1:5241
-    // app_name=expose_port:target_address
     let params = parse_args();
 
     println!("{:?}", params);
