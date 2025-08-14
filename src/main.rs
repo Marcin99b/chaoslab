@@ -1,3 +1,4 @@
+mod engine;
 mod input_param;
 mod redirection;
 
@@ -9,6 +10,8 @@ fn main() -> io::Result<()> {
     let params = parse_args();
 
     println!("{:?}", params);
+
+    engine::start_engine("127.0.0.1:9900".to_string());
 
     let mut threads = Vec::new();
     let mut redirections = Vec::new();
