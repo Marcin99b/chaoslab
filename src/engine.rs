@@ -1,7 +1,7 @@
 use core::str;
 use std::{io::Read, net::TcpListener};
 
-use crate::input_param::parse_args;
+use crate::input_param::parse_args_from_string;
 
 pub fn start_engine(address: String) {
     let listener = TcpListener::bind(address).unwrap();
@@ -16,7 +16,7 @@ pub fn start_engine(address: String) {
                 Ok(n) => {
                     let request = str::from_utf8(&buf[..n]).unwrap();
                     println!("{}", request);
-                    let params = parse_args();
+                    let params = parse_args_from_string(request.to_string());
                 }
                 Err(_) => break,
             }

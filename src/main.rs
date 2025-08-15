@@ -2,12 +2,13 @@ mod engine;
 mod input_param;
 mod redirection;
 
-use input_param::parse_args;
 use redirection::Redirection;
 use std::io;
 
+use crate::input_param::parse_args_from_console;
+
 fn main() -> io::Result<()> {
-    let params = parse_args();
+    let params = parse_args_from_console();
 
     println!("{:?}", params);
 
