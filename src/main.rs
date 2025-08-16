@@ -5,14 +5,14 @@ mod redirection;
 use redirection::Redirection;
 use std::io;
 
-use crate::input_param::parse_args_from_console;
+use crate::{engine::Engine, input_param::parse_args_from_console};
 
 fn main() -> io::Result<()> {
     let params = parse_args_from_console();
 
     println!("{:?}", params);
 
-    engine::start_engine("127.0.0.1:9900".to_string());
+    Engine::new().start("127.0.0.1:9900".to_string());
 
     let mut threads = Vec::new();
     let mut redirections = Vec::new();
