@@ -17,7 +17,7 @@ impl Engine {
         }
     }
 
-    pub fn start(&self, address: String) {
+    pub fn start(&mut self, address: String) {
         let listener = TcpListener::bind(address).unwrap();
         for stream in listener.incoming() {
             let mut buf = [0u8; 4096];
@@ -31,6 +31,20 @@ impl Engine {
                         let request = str::from_utf8(&buf[..n]).unwrap();
                         println!("{}", request);
                         let params = parse_args_from_string(request.to_string());
+
+                        for param in params {
+                            println!(
+                                "Start redirection {} | 127.0.0.1:{} -> {}",
+                                param.name, param.expose, param.target
+                            );
+                            let r = Redirection::new(param.expose, param.target.clone());
+                            let t = r.init().unwrap();
+                            self.threads.push(t);
+
+                            r.start();
+                            r.slow(200);
+                            self.redirections.push(r);
+                        }
                     }
                     Err(_) => break,
                 }
