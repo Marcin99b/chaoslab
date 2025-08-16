@@ -3,6 +3,7 @@ use std::{io::Read, net::TcpListener, thread::JoinHandle};
 
 use crate::{input_param::parse_args_from_string, redirection::Redirection};
 
+#[derive(Debug)]
 pub struct Engine {
     threads: Vec<JoinHandle<()>>,
     redirections: Vec<Redirection>,

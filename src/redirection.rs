@@ -4,13 +4,14 @@ use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 
+#[derive(Debug)]
 pub struct Redirection {
     pub listening_port: i32,
     pub target_address: String,
     pub mode: Arc<Mutex<RedirectionMode>>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum RedirectionMode {
     Started,
     Off,
