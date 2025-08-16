@@ -26,6 +26,7 @@ fn main() -> io::Result<()> {
         threads.push(t);
 
         r.start();
+        r.slow(200);
         redirections.push(r);
     }
 

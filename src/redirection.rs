@@ -71,6 +71,7 @@ impl Redirection {
         let mut mode = self.mode.lock().unwrap();
         *mode = RedirectionMode::Slowed(ms);
     }
+
     fn handle_client(stream: TcpStream, target_address: String) -> io::Result<()> {
         let target_stream = TcpStream::connect(target_address)?;
 
