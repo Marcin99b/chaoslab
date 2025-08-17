@@ -20,8 +20,8 @@ pub enum RedirectionMode {
 }
 
 impl Redirection {
-    pub fn new(name: String, listening_port: i32, target_address: String) -> Redirection {
-        Redirection {
+    pub fn new(name: String, listening_port: i32, target_address: String) -> Self {
+        Self {
             name,
             listening_port,
             target_address,
@@ -34,7 +34,7 @@ impl Redirection {
         let mode = Arc::clone(&self.mode);
         let t = thread::spawn(move || {
             let address = format!("127.0.0.1:{}", listening_port);
-            let listener = TcpListener::bind(address).unwrap();
+            let listener = TcpListener::bind(address).expect("Failed to bind TCP listener");
             for stream in listener.incoming() {
                 if let Ok(s) = stream {
                     let res = match mode.lock().unwrap().clone() {
@@ -82,7 +82,6 @@ impl Redirection {
         let mut target_read = target_stream.try_clone()?;
         let mut target_write = target_stream;
 
-        // Thread: client -> target
         let t1 = thread::spawn(move || {
             let mut buf = [0u8; 4096];
             loop {
@@ -101,7 +100,6 @@ impl Redirection {
             }
         });
 
-        // Thread: target -> client
         let t2 = thread::spawn(move || {
             let mut buf = [0u8; 4096];
             loop {

@@ -2,8 +2,19 @@ use std::{io::Write, net::TcpStream};
 
 pub fn send(message: String, address: String) {
     println!("sending request {}", message);
-    let mut stream = TcpStream::connect(address).unwrap();
-    let buf = message.as_bytes();
-    stream.write_all(&buf).unwrap();
-    stream.shutdown(std::net::Shutdown::Write).unwrap();
+    match TcpStream::connect(address) {
+        Ok(mut stream) => {
+            let buf = message.as_bytes();
+            if let Err(e) = stream.write_all(buf) {
+                eprintln!("Failed to send request: {}", e);
+                return;
+            }
+            if let Err(e) = stream.shutdown(std::net::Shutdown::Write) {
+                eprintln!("Failed to shutdown stream: {}", e);
+            }
+        }
+        Err(e) => {
+            eprintln!("Failed to connect: {}", e);
+        }
+    }
 }

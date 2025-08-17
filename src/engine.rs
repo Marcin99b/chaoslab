@@ -1,7 +1,6 @@
-use crate::{
-    command_handler::CommandHandler, command_reveiver::CommandReceiver,
-    redirections_storage::RedirectionsStorage,
-};
+use crate::command_handler::CommandHandler;
+use crate::command_receiver::CommandReceiver;
+use crate::redirections_storage::RedirectionsStorage;
 use std::thread::{self, JoinHandle};
 
 #[derive(Debug)]
@@ -10,8 +9,8 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn new() -> Engine {
-        Engine {
+    pub fn new() -> Self {
+        Self {
             storage: RedirectionsStorage::new(),
         }
     }
@@ -20,9 +19,11 @@ impl Engine {
         let handler = CommandHandler::from_storage(self.storage.clone());
         thread::spawn(move || {
             println!("starting engine {}", address);
-            let reveiver = CommandReceiver::new(address);
-            for command in reveiver.listen() {
-                handler.handle(command).unwrap();
+            let receiver = CommandReceiver::new(address);
+            for command in receiver.listen() {
+                if let Err(e) = handler.handle(command) {
+                    eprintln!("Command handling error: {}", e);
+                }
             }
         })
     }

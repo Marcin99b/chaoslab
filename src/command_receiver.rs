@@ -36,12 +36,12 @@ pub struct CommandReceiver {
 }
 
 impl CommandReceiver {
-    pub fn new(address: String) -> CommandReceiver {
-        CommandReceiver { address }
+    pub fn new(address: String) -> Self {
+        Self { address }
     }
 
     pub fn listen(&self) -> CommandIter {
-        let listener = TcpListener::bind(&self.address).unwrap();
+        let listener = TcpListener::bind(&self.address).expect("Failed to bind TCP listener");
         CommandIter { listener }
     }
 }

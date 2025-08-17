@@ -18,7 +18,7 @@ impl RedirectionsStorage {
 
     pub fn find_by_name(&self, name: &str) -> Option<Redirection> {
         let redirs = self.redirections.lock().unwrap();
-        redirs.iter().find(|r| r.name.to_string() == name).cloned()
+        redirs.iter().find(|r| r.name == name).cloned()
     }
 
     pub fn add_redirection(&self, redirection: Redirection, handle: JoinHandle<()>) {

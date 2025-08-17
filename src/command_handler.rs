@@ -1,6 +1,6 @@
-use crate::{
-    input_param::ParsedCommand, redirection::Redirection, redirections_storage::RedirectionsStorage,
-};
+use crate::input_param::ParsedCommand;
+use crate::redirection::Redirection;
+use crate::redirections_storage::RedirectionsStorage;
 use std::io;
 
 pub struct CommandHandler {
@@ -26,19 +26,31 @@ impl CommandHandler {
 
     fn handle_start(&self, command: ParsedCommand) -> io::Result<()> {
         let mut args = command.args.iter();
-        let name = args.next().unwrap().to_string();
-        let port = args.next().unwrap().parse().unwrap();
-        let target = args.next().unwrap().to_string();
+        let name = args
+            .next()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?
+            .to_string();
+        let port = args
+            .next()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing port argument"))?
+            .parse()
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Invalid port value"))?;
+        let target = args
+            .next()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing target argument"))?
+            .to_string();
         let r = Redirection::new(name, port, target);
-        let t = r.init().unwrap();
+        let t = r.init()?;
         r.start();
         self.storage.add_redirection(r, t);
         Ok(())
     }
 
     fn handle_stop(&self, command: ParsedCommand) -> io::Result<()> {
-        let args = &mut command.args.iter();
-        let name = args.next().unwrap();
+        let mut args = command.args.iter();
+        let name = args
+            .next()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
         if let Some(r) = self.storage.find_by_name(name) {
             r.stop();
             Ok(())
@@ -51,9 +63,15 @@ impl CommandHandler {
     }
 
     fn handle_slow(&self, command: ParsedCommand) -> io::Result<()> {
-        let args = &mut command.args.iter();
-        let name = args.next().unwrap();
-        let ms = args.next().unwrap().parse().unwrap();
+        let mut args = command.args.iter();
+        let name = args
+            .next()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
+        let ms = args
+            .next()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing ms argument"))?
+            .parse()
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Invalid ms value"))?;
         if let Some(r) = self.storage.find_by_name(name) {
             r.slow(ms);
             Ok(())
