@@ -1,3 +1,5 @@
+use std::io;
+
 #[derive(Debug)]
 pub struct InputParam {
     pub name: String,
@@ -5,9 +7,23 @@ pub struct InputParam {
     pub target: String,
 }
 
+#[derive(Debug)]
+pub struct ParsedCommand {
+    pub name: String,
+    pub args: Vec<String>,
+}
+
+impl ParsedCommand {
+    pub fn new(name: String, args: Vec<String>) -> ParsedCommand {
+        ParsedCommand { name, args }
+    }
+}
+
 /// example
 ///
-/// my_app_https=1001:127.0.0.1:7176 my_app_http=1002:127.0.0.1:5241
+/// start my_app_https 1001:127.0.0.1:7176
+/// stop my_app_https
+/// slow my_app_https 200ms
 ///
 /// app_name=expose_port:target_address
 pub fn parse_args_from_string(input: String) -> Vec<InputParam> {
@@ -32,4 +48,47 @@ pub fn parse_args_from_iterator(input: impl Iterator<Item = String>) -> Vec<Inpu
             })
         })
         .collect()
+}
+
+//todo add validation
+pub fn parse_args_from_iterator2(
+    mut input: impl Iterator<Item = String>,
+) -> io::Result<ParsedCommand> {
+    let result = match input.next() {
+        Some(command) => match command.as_str() {
+            "start" => {
+                let name = input.next().unwrap();
+                let address_pair = input.next().unwrap();
+                let separator = address_pair.find(":").unwrap();
+                let expose = &address_pair[..separator];
+                let target = &address_pair[separator + 1..];
+
+                let args = [name, expose.to_string(), target.to_string()];
+                Some(ParsedCommand::new(command, args.to_vec()))
+            }
+            "stop" => {
+                let name = input.next().unwrap();
+
+                let args = [name];
+                Some(ParsedCommand::new(command, args.to_vec()))
+            }
+            "slow" => {
+                let name = input.next().unwrap();
+                let ms = input.next().unwrap();
+
+                let args = [name, ms];
+                Some(ParsedCommand::new(command, args.to_vec()))
+            }
+            _ => None,
+        },
+        None => None,
+    };
+
+    match result {
+        Some(x) => Ok(x),
+        None => Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("Cannot parse command"),
+        )),
+    }
 }
