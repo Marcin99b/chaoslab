@@ -21,7 +21,7 @@ impl RedirectionsStorage {
         redirs.iter().find(|r| r.name == name).cloned()
     }
 
-    pub fn add_redirection(&self, redirection: Redirection, handle: JoinHandle<()>) {
+    pub fn add(&self, redirection: Redirection, handle: JoinHandle<()>) {
         self.redirections.lock().unwrap().push(redirection);
         self.threads.lock().unwrap().push(handle);
     }

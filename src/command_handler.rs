@@ -42,7 +42,7 @@ impl CommandHandler {
         let r = Redirection::new(name, port, target);
         let t = r.init()?;
         r.set_mode(RedirectionMode::Started);
-        self.storage.add_redirection(r, t);
+        self.storage.add(r, t);
         Ok(())
     }
 
