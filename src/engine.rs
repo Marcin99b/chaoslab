@@ -60,6 +60,13 @@ impl Engine {
                                         let r = redirs.iter().find(|x| x.name == name).unwrap();
                                         r.stop();
                                     }
+                                    "slow" => {
+                                        let args = &mut command.args.iter();
+                                        let name = args.next().unwrap().to_string();
+                                        let redirs = redirections.lock().unwrap();
+                                        let r = redirs.iter().find(|x| x.name == name).unwrap();
+                                        r.slow(args.next().unwrap().parse().unwrap());
+                                    }
                                     _ => {
                                         println!("Unknown command: {}", command.name);
                                     }
