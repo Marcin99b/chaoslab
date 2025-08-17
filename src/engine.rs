@@ -39,20 +39,31 @@ impl Engine {
                         Ok(n) => {
                             let request = str::from_utf8(&buf[..n]).unwrap();
                             println!("Incoming {}", request);
-                            let params = parse_args_from_string(request.to_string());
-
-                            for param in params {
-                                println!(
-                                    "Start redirection {} | 127.0.0.1:{} -> {}",
-                                    param.name, param.expose, param.target
-                                );
-                                let r = Redirection::new(param.expose, param.target.clone());
-                                let t = r.init().unwrap();
-
-                                r.start();
-
-                                redirections.lock().unwrap().push(r);
-                                threads.lock().unwrap().push(t);
+                            if let Ok(command) = parse_args_from_string(request.to_string()) {
+                                match command.name.as_str() {
+                                    "start" => {
+                                        let mut args = command.args.iter();
+                                        let r = Redirection::new(
+                                            args.next().unwrap().to_string(),
+                                            args.next().unwrap().parse().unwrap(),
+                                            args.next().unwrap().to_string(),
+                                        );
+                                        let t = r.init().unwrap();
+                                        r.start();
+                                        redirections.lock().unwrap().push(r);
+                                        threads.lock().unwrap().push(t);
+                                    }
+                                    "stop" => {
+                                        let args = &mut command.args.iter();
+                                        let name = args.next().unwrap().to_string();
+                                        let redirs = redirections.lock().unwrap();
+                                        let r = redirs.iter().find(|x| x.name == name).unwrap();
+                                        r.stop();
+                                    }
+                                    _ => {
+                                        println!("Unknown command: {}", command.name);
+                                    }
+                                };
                             }
                         }
                         Err(_) => break,

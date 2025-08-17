@@ -6,6 +6,7 @@ use std::thread::{self, JoinHandle};
 
 #[derive(Debug)]
 pub struct Redirection {
+    pub name: String,
     pub listening_port: i32,
     pub target_address: String,
     pub mode: Arc<Mutex<RedirectionMode>>,
@@ -19,8 +20,9 @@ pub enum RedirectionMode {
 }
 
 impl Redirection {
-    pub fn new(listening_port: i32, target_address: String) -> Redirection {
+    pub fn new(name: String, listening_port: i32, target_address: String) -> Redirection {
         Redirection {
+            name,
             listening_port,
             target_address,
             mode: Arc::new(Mutex::new(RedirectionMode::Off)),
