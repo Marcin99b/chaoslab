@@ -1,13 +1,6 @@
 use std::io;
 
 #[derive(Debug)]
-pub struct InputParam {
-    pub name: String,
-    pub expose: i32,
-    pub target: String,
-}
-
-#[derive(Debug)]
 pub struct ParsedCommand {
     pub name: String,
     pub args: Vec<String>,
