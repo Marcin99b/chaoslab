@@ -4,7 +4,7 @@ use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Redirection {
     pub name: String,
     pub listening_port: i32,

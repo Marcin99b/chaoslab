@@ -4,6 +4,7 @@ mod command_reveiver;
 mod engine;
 mod input_param;
 mod redirection;
+mod redirections_storage;
 
 use std::io;
 

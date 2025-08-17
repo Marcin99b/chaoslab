@@ -1,22 +1,15 @@
-use std::{
-    io,
-    sync::{Arc, Mutex},
-    thread::JoinHandle,
+use crate::{
+    input_param::ParsedCommand, redirection::Redirection, redirections_storage::RedirectionsStorage,
 };
-
-use crate::{engine::Engine, input_param::ParsedCommand, redirection::Redirection};
+use std::io;
 
 pub struct CommandHandler {
-    threads_ref: Arc<Mutex<Vec<JoinHandle<()>>>>,
-    redirections_ref: Arc<Mutex<Vec<Redirection>>>,
+    storage: RedirectionsStorage,
 }
 
 impl CommandHandler {
-    pub fn from_engine(engine: &Engine) -> CommandHandler {
-        CommandHandler {
-            threads_ref: Arc::clone(&engine.threads),
-            redirections_ref: Arc::clone(&engine.redirections),
-        }
+    pub fn from_storage(storage: RedirectionsStorage) -> CommandHandler {
+        CommandHandler { storage }
     }
 
     pub fn handle(&self, command: ParsedCommand) -> io::Result<()> {
@@ -33,33 +26,42 @@ impl CommandHandler {
 
     fn handle_start(&self, command: ParsedCommand) -> io::Result<()> {
         let mut args = command.args.iter();
-        let r = Redirection::new(
-            args.next().unwrap().to_string(),
-            args.next().unwrap().parse().unwrap(),
-            args.next().unwrap().to_string(),
-        );
+        let name = args.next().unwrap().to_string();
+        let port = args.next().unwrap().parse().unwrap();
+        let target = args.next().unwrap().to_string();
+        let r = Redirection::new(name, port, target);
         let t = r.init().unwrap();
         r.start();
-        self.redirections_ref.lock().unwrap().push(r);
-        self.threads_ref.lock().unwrap().push(t);
+        self.storage.add_redirection(r, t);
         Ok(())
     }
 
     fn handle_stop(&self, command: ParsedCommand) -> io::Result<()> {
         let args = &mut command.args.iter();
-        let name = args.next().unwrap().to_string();
-        let redirs = self.redirections_ref.lock().unwrap();
-        let r = redirs.iter().find(|x| x.name == name).unwrap();
-        r.stop();
-        Ok(())
+        let name = args.next().unwrap();
+        if let Some(r) = self.storage.find_by_name(name) {
+            r.stop();
+            Ok(())
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Redirection not found",
+            ))
+        }
     }
 
     fn handle_slow(&self, command: ParsedCommand) -> io::Result<()> {
         let args = &mut command.args.iter();
-        let name = args.next().unwrap().to_string();
-        let redirs = self.redirections_ref.lock().unwrap();
-        let r = redirs.iter().find(|x| x.name == name).unwrap();
-        r.slow(args.next().unwrap().parse().unwrap());
-        Ok(())
+        let name = args.next().unwrap();
+        let ms = args.next().unwrap().parse().unwrap();
+        if let Some(r) = self.storage.find_by_name(name) {
+            r.slow(ms);
+            Ok(())
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Redirection not found",
+            ))
+        }
     }
 }
