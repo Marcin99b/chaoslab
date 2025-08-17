@@ -7,11 +7,11 @@ pub struct ParsedCommand {
 }
 
 impl ParsedCommand {
-    pub fn new(name: String, args: Vec<String>) -> ParsedCommand {
-        ParsedCommand { name, args }
+    pub fn new(name: String, args: Vec<String>) -> Self {
+        Self { name, args }
     }
 
-    pub fn from_str(request: &str) -> io::Result<ParsedCommand> {
+    pub fn from_str(request: &str) -> io::Result<Self> {
         parse_args_from_string(request.to_string())
     }
 }

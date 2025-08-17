@@ -8,8 +8,8 @@ pub struct CommandHandler {
 }
 
 impl CommandHandler {
-    pub fn from_storage(storage: RedirectionsStorage) -> CommandHandler {
-        CommandHandler { storage }
+    pub fn from_storage(storage: RedirectionsStorage) -> Self {
+        Self { storage }
     }
 
     pub fn handle(&self, command: ParsedCommand) -> io::Result<()> {
