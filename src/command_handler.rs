@@ -1,5 +1,5 @@
 use crate::input_param::ParsedCommand;
-use crate::redirection::Redirection;
+use crate::redirection::{Redirection, RedirectionMode};
 use crate::redirections_storage::RedirectionsStorage;
 use std::io;
 
@@ -41,7 +41,7 @@ impl CommandHandler {
             .to_string();
         let r = Redirection::new(name, port, target);
         let t = r.init()?;
-        r.start();
+        r.set_mode(RedirectionMode::Started);
         self.storage.add_redirection(r, t);
         Ok(())
     }
@@ -52,7 +52,7 @@ impl CommandHandler {
             .next()
             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
         if let Some(r) = self.storage.find_by_name(name) {
-            r.stop();
+            r.set_mode(RedirectionMode::Off);
             Ok(())
         } else {
             Err(io::Error::new(
@@ -73,7 +73,7 @@ impl CommandHandler {
             .parse()
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Invalid ms value"))?;
         if let Some(r) = self.storage.find_by_name(name) {
-            r.slow(ms);
+            r.set_mode(RedirectionMode::Slowed(ms));
             Ok(())
         } else {
             Err(io::Error::new(

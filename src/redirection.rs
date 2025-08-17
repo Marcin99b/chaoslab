@@ -59,19 +59,9 @@ impl Redirection {
         Ok(t)
     }
 
-    pub fn start(&self) {
+    pub fn set_mode(&self, new_mode: RedirectionMode) {
         let mut mode = self.mode.lock().unwrap();
-        *mode = RedirectionMode::Started;
-    }
-
-    pub fn stop(&self) {
-        let mut mode = self.mode.lock().unwrap();
-        *mode = RedirectionMode::Off;
-    }
-
-    pub fn slow(&self, ms: u64) {
-        let mut mode = self.mode.lock().unwrap();
-        *mode = RedirectionMode::Slowed(ms);
+        *mode = new_mode;
     }
 
     fn handle_client(stream: TcpStream, target_address: String) -> io::Result<()> {
