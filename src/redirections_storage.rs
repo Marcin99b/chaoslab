@@ -25,11 +25,4 @@ impl RedirectionsStorage {
         self.redirections.lock().unwrap().push(redirection);
         self.threads.lock().unwrap().push(handle);
     }
-
-    pub fn join_all(&self) {
-        let mut threads = self.threads.lock().unwrap();
-        while let Some(t) = threads.pop() {
-            let _ = t.join();
-        }
-    }
 }
