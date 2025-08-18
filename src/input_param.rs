@@ -19,7 +19,7 @@ impl ParsedCommand {
 // Example usage:
 // start my_app_https 1001:127.0.0.1:7176
 // stop my_app_https
-// slow my_app_https 200ms
+// slow my_app_https 200
 pub fn parse_args_from_string(input: String) -> io::Result<ParsedCommand> {
     let split = input.split(" ").map(|x| x.to_string());
     parse_args_from_iterator(split)
