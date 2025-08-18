@@ -25,44 +25,23 @@ pub fn parse_args_from_string(input: String) -> io::Result<ParsedCommand> {
     parse_args_from_iterator(split)
 }
 
-// TODO: add validation
 pub fn parse_args_from_iterator(
     mut input: impl Iterator<Item = String>,
 ) -> io::Result<ParsedCommand> {
     let result = match input.next() {
         Some(command) => match command.as_str() {
-            "start" => {
-                let name = input.next().ok_or_else(|| {
-                    io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument")
-                })?;
-                let address_pair = input.next().ok_or_else(|| {
-                    io::Error::new(io::ErrorKind::InvalidInput, "Missing address pair argument")
-                })?;
-                let separator = address_pair.find(":").ok_or_else(|| {
-                    io::Error::new(io::ErrorKind::InvalidInput, "Missing ':' in address pair")
-                })?;
-                let expose = &address_pair[..separator];
-                let target = &address_pair[separator + 1..];
-                let args = [name, expose.to_string(), target.to_string()];
-                Some(ParsedCommand::new(command, args.to_vec()))
-            }
-            "stop" => {
-                let name = input.next().ok_or_else(|| {
-                    io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument")
-                })?;
-                let args = [name];
-                Some(ParsedCommand::new(command, args.to_vec()))
-            }
-            "slow" => {
-                let name = input.next().ok_or_else(|| {
-                    io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument")
-                })?;
-                let time = input.next().ok_or_else(|| {
-                    io::Error::new(io::ErrorKind::InvalidInput, "Missing time argument")
-                })?;
-                let args = [name, time];
-                Some(ParsedCommand::new(command, args.to_vec()))
-            }
+            "start" => match parse_start(command, input) {
+                Ok(x) => Some(x),
+                _ => None,
+            },
+            "stop" => match parse_stop(command, input) {
+                Ok(x) => Some(x),
+                _ => None,
+            },
+            "slow" => match parse_slow(command, input) {
+                Ok(x) => Some(x),
+                _ => None,
+            },
             _ => None,
         },
         None => None,
@@ -75,4 +54,48 @@ pub fn parse_args_from_iterator(
             "Cannot parse command",
         )),
     }
+}
+
+fn parse_start(
+    command: String,
+    mut input: impl Iterator<Item = String>,
+) -> io::Result<ParsedCommand> {
+    let name = input
+        .next()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
+    let address_pair = input.next().ok_or_else(|| {
+        io::Error::new(io::ErrorKind::InvalidInput, "Missing address pair argument")
+    })?;
+    let separator = address_pair.find(":").ok_or_else(|| {
+        io::Error::new(io::ErrorKind::InvalidInput, "Missing ':' in address pair")
+    })?;
+    let expose = &address_pair[..separator];
+    let target = &address_pair[separator + 1..];
+    let args = [name, expose.to_string(), target.to_string()];
+    Ok(ParsedCommand::new(command, args.to_vec()))
+}
+
+fn parse_stop(
+    command: String,
+    mut input: impl Iterator<Item = String>,
+) -> io::Result<ParsedCommand> {
+    let name = input
+        .next()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
+    let args = [name];
+    Ok(ParsedCommand::new(command, args.to_vec()))
+}
+
+fn parse_slow(
+    command: String,
+    mut input: impl Iterator<Item = String>,
+) -> io::Result<ParsedCommand> {
+    let name = input
+        .next()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
+    let time = input
+        .next()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing time argument"))?;
+    let args = [name, time];
+    Ok(ParsedCommand::new(command, args.to_vec()))
 }
