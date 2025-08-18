@@ -28,27 +28,14 @@ pub fn parse_args_from_string(input: String) -> io::Result<ParsedCommand> {
 pub fn parse_args_from_iterator(
     mut input: impl Iterator<Item = String>,
 ) -> io::Result<ParsedCommand> {
-    let result = match input.next() {
-        Some(command) => match command.as_str() {
-            "start" => match parse_start(command, input) {
-                Ok(x) => Some(x),
-                _ => None,
-            },
-            "stop" => match parse_stop(command, input) {
-                Ok(x) => Some(x),
-                _ => None,
-            },
-            "slow" => match parse_slow(command, input) {
-                Ok(x) => Some(x),
-                _ => None,
-            },
-            _ => None,
-        },
-        None => None,
-    };
-
-    match result {
-        Some(x) => Ok(x),
+    match input.next().as_deref() {
+        Some("start") => parse_start(input),
+        Some("stop") => parse_stop(input),
+        Some("slow") => parse_slow(input),
+        Some(cmd) => Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("Unknown command: {}", cmd),
+        )),
         None => Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "Cannot parse command",
@@ -56,10 +43,7 @@ pub fn parse_args_from_iterator(
     }
 }
 
-fn parse_start(
-    command: String,
-    mut input: impl Iterator<Item = String>,
-) -> io::Result<ParsedCommand> {
+fn parse_start(mut input: impl Iterator<Item = String>) -> io::Result<ParsedCommand> {
     let name = input
         .next()
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
@@ -72,24 +56,18 @@ fn parse_start(
     let expose = &address_pair[..separator];
     let target = &address_pair[separator + 1..];
     let args = [name, expose.to_string(), target.to_string()];
-    Ok(ParsedCommand::new(command, args.to_vec()))
+    Ok(ParsedCommand::new("start".to_string(), args.to_vec()))
 }
 
-fn parse_stop(
-    command: String,
-    mut input: impl Iterator<Item = String>,
-) -> io::Result<ParsedCommand> {
+fn parse_stop(mut input: impl Iterator<Item = String>) -> io::Result<ParsedCommand> {
     let name = input
         .next()
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
     let args = [name];
-    Ok(ParsedCommand::new(command, args.to_vec()))
+    Ok(ParsedCommand::new("stop".to_string(), args.to_vec()))
 }
 
-fn parse_slow(
-    command: String,
-    mut input: impl Iterator<Item = String>,
-) -> io::Result<ParsedCommand> {
+fn parse_slow(mut input: impl Iterator<Item = String>) -> io::Result<ParsedCommand> {
     let name = input
         .next()
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
@@ -97,5 +75,5 @@ fn parse_slow(
         .next()
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing time argument"))?;
     let args = [name, time];
-    Ok(ParsedCommand::new(command, args.to_vec()))
+    Ok(ParsedCommand::new("slow".to_string(), args.to_vec()))
 }
