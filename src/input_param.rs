@@ -1,16 +1,14 @@
 use std::io;
 
 #[derive(Debug)]
-pub struct ParsedCommand {
-    pub name: String,
-    pub args: Vec<String>,
+pub enum ParsedCommand {
+    Start(String, String, String),
+    Stop(String),
+    Slow(String, String),
+    Resume(String),
 }
 
 impl ParsedCommand {
-    pub fn new(name: String, args: Vec<String>) -> Self {
-        Self { name, args }
-    }
-
     pub fn from_str(request: &str) -> io::Result<Self> {
         parse_args_from_string(request.to_string())
     }
@@ -32,6 +30,7 @@ pub fn parse_args_from_iterator(
         Some("start") => parse_start(input),
         Some("stop") => parse_stop(input),
         Some("slow") => parse_slow(input),
+        Some("resume") => parse_resume(input),
         Some(cmd) => Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             format!("Unknown command: {}", cmd),
@@ -55,16 +54,20 @@ fn parse_start(mut input: impl Iterator<Item = String>) -> io::Result<ParsedComm
     })?;
     let expose = &address_pair[..separator];
     let target = &address_pair[separator + 1..];
-    let args = [name, expose.to_string(), target.to_string()];
-    Ok(ParsedCommand::new("start".to_string(), args.to_vec()))
+
+    Ok(ParsedCommand::Start(
+        name,
+        expose.to_string(),
+        target.to_string(),
+    ))
 }
 
 fn parse_stop(mut input: impl Iterator<Item = String>) -> io::Result<ParsedCommand> {
     let name = input
         .next()
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
-    let args = [name];
-    Ok(ParsedCommand::new("stop".to_string(), args.to_vec()))
+
+    Ok(ParsedCommand::Stop(name))
 }
 
 fn parse_slow(mut input: impl Iterator<Item = String>) -> io::Result<ParsedCommand> {
@@ -74,6 +77,14 @@ fn parse_slow(mut input: impl Iterator<Item = String>) -> io::Result<ParsedComma
     let time = input
         .next()
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing time argument"))?;
-    let args = [name, time];
-    Ok(ParsedCommand::new("slow".to_string(), args.to_vec()))
+
+    Ok(ParsedCommand::Slow(name, time))
+}
+
+fn parse_resume(mut input: impl Iterator<Item = String>) -> io::Result<ParsedCommand> {
+    let name = input
+        .next()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
+
+    Ok(ParsedCommand::Resume(name))
 }

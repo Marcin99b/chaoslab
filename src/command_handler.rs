@@ -13,32 +13,19 @@ impl CommandHandler {
     }
 
     pub fn handle(&self, command: ParsedCommand) -> io::Result<()> {
-        match command.name.as_str() {
-            "start" => self.handle_start(command),
-            "stop" => self.handle_stop(command),
-            "slow" => self.handle_slow(command),
-            _ => Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("Unknown command: {}", command.name),
-            )),
+        match command {
+            ParsedCommand::Start(name, expose, target) => self.handle_start(name, expose, target),
+            ParsedCommand::Stop(name) => self.handle_stop(name),
+            ParsedCommand::Slow(name, time) => self.handle_slow(name, time),
+            ParsedCommand::Resume(name) => self.handle_resume(name),
         }
     }
 
-    fn handle_start(&self, command: ParsedCommand) -> io::Result<()> {
-        let mut args = command.args.iter();
-        let name = args
-            .next()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?
-            .to_string();
-        let port = args
-            .next()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing port argument"))?
+    fn handle_start(&self, name: String, expose: String, target: String) -> io::Result<()> {
+        let port = expose
             .parse()
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Invalid port value"))?;
-        let target = args
-            .next()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing target argument"))?
-            .to_string();
+
         let r = Redirection::new(name, port, target);
         let t = r.init()?;
         r.set_mode(RedirectionMode::Started);
@@ -46,12 +33,8 @@ impl CommandHandler {
         Ok(())
     }
 
-    fn handle_stop(&self, command: ParsedCommand) -> io::Result<()> {
-        let mut args = command.args.iter();
-        let name = args
-            .next()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
-        if let Some(r) = self.storage.find_by_name(name) {
+    fn handle_stop(&self, name: String) -> io::Result<()> {
+        if let Some(r) = self.storage.find_by_name(&name) {
             r.set_mode(RedirectionMode::Off);
             Ok(())
         } else {
@@ -62,18 +45,24 @@ impl CommandHandler {
         }
     }
 
-    fn handle_slow(&self, command: ParsedCommand) -> io::Result<()> {
-        let mut args = command.args.iter();
-        let name = args
-            .next()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing name argument"))?;
-        let ms = args
-            .next()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Missing ms argument"))?
+    fn handle_slow(&self, name: String, time: String) -> io::Result<()> {
+        let ms = time
             .parse()
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "Invalid ms value"))?;
-        if let Some(r) = self.storage.find_by_name(name) {
+        if let Some(r) = self.storage.find_by_name(&name) {
             r.set_mode(RedirectionMode::Slowed(ms));
+            Ok(())
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Redirection not found",
+            ))
+        }
+    }
+
+    fn handle_resume(&self, name: String) -> io::Result<()> {
+        if let Some(r) = self.storage.find_by_name(&name) {
+            r.set_mode(RedirectionMode::Started);
             Ok(())
         } else {
             Err(io::Error::new(
