@@ -13,11 +13,12 @@ impl CommandHandler {
     }
 
     pub fn handle(&self, command: ParsedCommand) -> io::Result<()> {
+        use ParsedCommand::*;
         match command {
-            ParsedCommand::Start(name, expose, target) => self.handle_start(name, expose, target),
-            ParsedCommand::Stop(name) => self.handle_stop(name),
-            ParsedCommand::Slow(name, time) => self.handle_slow(name, time),
-            ParsedCommand::Resume(name) => self.handle_resume(name),
+            Start(name, expose, target) => self.handle_start(name, expose, target),
+            Stop(name) => self.handle_stop(name),
+            Slow(name, time) => self.handle_slow(name, time),
+            Resume(name) => self.handle_resume(name),
         }
     }
 
